@@ -45,7 +45,7 @@ class Worker(QRunnable):
 class Controller:
     def __init__(self, app):
         self.cfg, self.ocr, self.paused = Settings(), OCREngine(), False
-        self.sig = Signals(); self.popup = AnswerPopup(); self.sel = ScreenSelector()
+        self.sig = Signals(); self.popup = AnswerPopup(); self.sel = ScreenSelector(self.cfg["overlay_dim"], self.cfg["overlay_border"])
         self.tray = Tray(self.cfg["hotkey"]); self.hk = HotkeyManager(self.cfg["hotkey"])
         self.hk.triggered.connect(self.start); self.hk.failed.connect(
             lambda: self.tray.notify("Hotkey unavailable (already in use?)"))
