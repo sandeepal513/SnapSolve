@@ -2,7 +2,8 @@ from PySide6.QtCore import Qt, QRect, QTimer, Signal
 from PySide6.QtGui import QColor, QGuiApplication, QPainter, QPen
 from PySide6.QtWidgets import QWidget
 
-from app.utils.platform import IS_MAC, mac_activate
+from app.capture.screen_capture import grab_rect
+from app.utils.platform import IS_LINUX, IS_MAC, mac_activate
 
 
 class ScreenSelector(QWidget):
@@ -44,16 +45,14 @@ class ScreenSelector(QWidget):
         if r.width() < 10 or r.height() < 10:
             self.cancelled.emit(); return
         g = QRect(self.mapToGlobal(r.topLeft()), r.size())   # global logical coords
-        QTimer.singleShot(160 if IS_MAC else 60, lambda: self._grab(g))        # let overlay disappear
+        QTimer.singleShot(160 if IS_MAC else (120 if IS_LINUX else 60), lambda: self._grab(g))        # let overlay disappear
 
     def keyPressEvent(self, e):
         if e.key() == Qt.Key_Escape:
             self.hide(); self.cancelled.emit()
 
     def _grab(self, g):
-        scr = QGuiApplication.screenAt(g.center()) or QGuiApplication.primaryScreen()
-        sg = scr.geometry()
-        loc = g.intersected(sg).translated(-sg.topLeft())
-        if loc.isEmpty():
+        pm = grab_rect(g)
+        if pm is None or pm.isNull():
             self.cancelled.emit(); return
-        self.selected.emit(scr.grabWindow(0, loc.x(), loc.y(), loc.width(), loc.height()))
+        self.selected.emit(pm)

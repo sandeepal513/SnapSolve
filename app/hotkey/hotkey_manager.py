@@ -2,45 +2,44 @@ import ctypes, sys, threading
 from ctypes import wintypes
 from PySide6.QtCore import QObject, Signal
 
-MODS = {"alt": 1, "ctrl": 2, "shift": 4, "win": 8}
+from app.hotkey.keys import MODS, parse, pynput_combo, win_vk
+
 
 class HotkeyManager(QObject):
     triggered = Signal()
     failed = Signal()
 
-    def __init__(self, combo):
-        super().__init__(); self.combo, self.tid, self._listener = combo, None, None
+    def __init__(self, combo, hid=1):
+        super().__init__(); self.combo, self.tid, self._listener, self.hid = combo, None, None, hid
 
     def _start_pynput(self):
         try:                                   # macOS: needs Input Monitoring / Accessibility permission
             from pynput import keyboard
-            names = {"ctrl": "<ctrl>", "alt": "<alt>", "shift": "<shift>", "win": "<cmd>", "cmd": "<cmd>"}
-            parts = self.combo.lower().replace(" ", "").split("+")
-            combo = "+".join([names[p] for p in parts[:-1]] + [parts[-1]])
-            self._listener = keyboard.GlobalHotKeys({combo: self.triggered.emit})
+            self._listener = keyboard.GlobalHotKeys({pynput_combo(*parse(self.combo)): self.triggered.emit})
             self._listener.start()
         except Exception:
             self.failed.emit()
 
     def start(self):
+        try:
+            parse(self.combo)
+        except ValueError:
+            self.failed.emit(); return
         if sys.platform != "win32":
             return self._start_pynput()
         threading.Thread(target=self._run, daemon=True).start()
 
     def _run(self):
         u = ctypes.windll.user32
-        parts = self.combo.lower().replace(" ", "").split("+")
-        mods = 0x4000  # MOD_NOREPEAT
-        for p in parts[:-1]:
-            mods |= MODS[p]
+        mods, key = parse(self.combo)
         self.tid = ctypes.windll.kernel32.GetCurrentThreadId()
-        if not u.RegisterHotKey(None, 1, mods, ord(parts[-1].upper())):
+        if not u.RegisterHotKey(None, self.hid, mods | 0x4000, win_vk(key)):   # 0x4000 = no auto-repeat
             self.failed.emit(); return
         msg = wintypes.MSG()
         while u.GetMessageW(ctypes.byref(msg), None, 0, 0) > 0:
             if msg.message == 0x0312:  # WM_HOTKEY
                 self.triggered.emit()
-        u.UnregisterHotKey(None, 1)
+        u.UnregisterHotKey(None, self.hid)
 
     def stop(self):
         if self._listener:

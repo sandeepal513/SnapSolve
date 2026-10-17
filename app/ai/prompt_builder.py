@@ -16,3 +16,22 @@ def build(q: Question) -> str:
             "missing characters or odd line breaks; infer the intended wording (e.g. 'NoT' means NOT). "
             "Watch for negations such as NOT / EXCEPT / LEAST / FALSE.\n\n" + body +
             "\n\nThink briefly, then return ONLY this JSON: " + fmt + "\n" + rule)
+
+
+def build_screen(text: str) -> str:
+    """Prompt for OCR text of an ENTIRE screen: the AI finds the question, its options, and answers."""
+    return ("You are an expert quiz solver. Below is OCR text of an ENTIRE screen (browser, menus, other "
+            "windows and page furniture included). It may contain typos or missing spaces; infer the "
+            "intended wording.\n\nTask: find the main multiple-choice quiz question on the screen (if "
+            "several are visible, take the first complete one: question plus its options), ignore "
+            "everything else, and answer it.\n\nSCREEN TEXT:\n" + text +
+            '\n\nReturn ONLY this JSON: {"reasoning": "at most 2 short sentences", "question": "the question '
+            'text", "options": {"A": "exact option text"}, "labels_shown": true, "multiple": false, '
+            '"answer": "option label only, e.g. B"}\n'
+            "Rules: copy the question and option texts exactly as on screen (only fix obvious OCR spacing). "
+            "Use the labels shown on screen; if none are shown, use A, B, C... in order and set "
+            "labels_shown to false. Give exactly ONE answer unless the question says to select multiple / "
+            "all that apply (then multiple=true and list every correct label separated by commas). Watch for "
+            "NOT / EXCEPT / LEAST / FALSE. If there is a question without options, put its short final "
+            'answer in "answer" and use an empty options object. If there is no question on the screen, '
+            "return empty strings and an empty options object.")

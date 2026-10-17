@@ -50,9 +50,9 @@ class GroqProvider(Provider):
         p = {"model": m, "temperature": self.temp,
              "messages": [{"role": "user", "content": prompt}]}
         if "gpt-oss" in m:                       # reasoning model: keep thinking short and fast
-            p["reasoning_effort"] = "low"; p["max_completion_tokens"] = 1000
+            p["reasoning_effort"] = "low"; p["max_completion_tokens"] = 1500
         else:
-            p["max_completion_tokens"] = 400
+            p["max_completion_tokens"] = 700
         if json_mode:
             p["response_format"] = {"type": "json_object"}
         return p

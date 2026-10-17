@@ -43,3 +43,18 @@ Needs macOS 11+ and Python 3.10-3.12 (python.org or Homebrew).
 A .app can only be built on macOS. Push the project to GitHub and run the "Build SnapSolve" action:
 the `build-mac` job builds it on a Mac in the cloud. Download `SnapSolve-mac` from the run's artifacts, unzip it,
 right-click SnapSolve.app > Open. If macOS says the app is "damaged", run `xattr -cr SnapSolve.app` once in Terminal.
+
+## Two ways to ask (v2)
+- **Ctrl+Shift+A** - select an area (most accurate for one question).
+- **Ctrl+Shift+F** - reads the whole screen (the screen your cursor is on), finds the question and its options and answers it.
+  Only the question + options are copied to the clipboard. Change the shortcuts with `hotkey` / `hotkey_full` in config.json.
+  If several questions are visible, it takes the first complete one - use area selection for the others.
+
+## Changing the shortcuts
+Tray icon > **Change Shortcuts...** (or edit `hotkey` / `hotkey_full` in config.json and restart).
+Format: modifiers + one key, e.g. `ctrl+shift+a`, `alt+q`, `ctrl+alt+f9`. Modifiers: ctrl, alt, shift, win.
+Last key: one letter, one digit, or F1-F12.
+
+## Clearing the saved API key
+Tray icon > **Clear Saved API Key...** (asks you to confirm). The key file under `%APPDATA%\SnapSolve` is deleted;
+SnapSolve asks for a key again with **Set API Key...** (or on the next start).

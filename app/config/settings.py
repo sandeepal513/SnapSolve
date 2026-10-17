@@ -16,7 +16,7 @@ if not DIR.exists() and _OLD.exists():      # keep the saved API key and setting
         pass
 FILE = DIR / "config.json"
 KEYFILES = [DIR / "key_groq.dat", DIR / "key.dat"]   # key.dat = older versions
-DEFAULTS = {"hotkey": "ctrl+shift+a", "preferred_model": "",
+DEFAULTS = {"hotkey": "ctrl+shift+a", "hotkey_full": "ctrl+shift+f", "preferred_model": "",
             "popup_seconds": 15, "overlay_dim": 35, "overlay_border": 1, "temperature": 0.0, "preprocess": False}
 
 
@@ -31,6 +31,7 @@ class Settings:
                 pass
         else:
             self.save()
+        self._cleared = False
         self._key = self._load_key()
 
     def __getitem__(self, k):
@@ -48,6 +49,12 @@ class Settings:
                     return k
             except Exception:
                 pass
+            try:                               # no keyring available (common on Linux): private key file
+                k = (DIR / "key_groq.txt").read_text("utf-8").strip()
+                if k.startswith("gsk_"):
+                    return k
+            except Exception:
+                pass
             return os.getenv("AI_API_KEY", "").strip()
         from app.utils.secret import unprotect
         for f in KEYFILES:                     # encrypted, tied to your Windows user
@@ -61,23 +68,45 @@ class Settings:
 
     @property
     def api_key(self) -> str:
-        if not self._key:                      # self-heal if the first load failed
+        if not self._key and not self._cleared:   # self-heal if the first load failed
             self._key = self._load_key()
         return self._key
 
     def set_api_key(self, key: str) -> bool:
         key = key.strip()
         self._key = key                        # works immediately for this session
+        self._cleared = False
         if sys.platform != "win32":
             try:
                 import keyring
                 keyring.set_password("SnapSolve", "groq", key)
                 return True
-            except Exception:
-                return False
+            except Exception:                  # no Keychain / Secret Service: owner-only key file
+                try:
+                    f = DIR / "key_groq.txt"
+                    f.write_text(key, "utf-8"); os.chmod(f, 0o600)
+                    return True
+                except Exception:
+                    return False
         try:
             from app.utils.secret import protect
             KEYFILES[0].write_bytes(protect(key.encode("utf-8")))
             return True
         except Exception:
             return False
+
+    def clear_api_key(self) -> bool:
+        """Forget the saved key (this session and on disk). Returns False if a file could not be deleted."""
+        self._key, self._cleared, ok = "", True, True
+        for f in KEYFILES + [DIR / "key_groq.txt", _OLD / "key_groq.dat", _OLD / "key.dat"]:   # _OLD = pre-rename folder
+            try:
+                f.unlink(missing_ok=True)
+            except Exception:
+                ok = False
+        if sys.platform != "win32":
+            try:
+                import keyring
+                keyring.delete_password("SnapSolve", "groq")
+            except Exception:
+                pass
+        return ok
