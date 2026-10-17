@@ -1,4 +1,4 @@
-name: Build Windows EXE
+name: Build SnapSolve
 on:
   workflow_dispatch:
   push:
@@ -18,3 +18,16 @@ jobs:
         with:
           name: SnapSolve
           path: dist/SnapSolve.exe
+  build-mac:
+    runs-on: macos-latest        # Apple Silicon (M1/M2/M3/M4) Macs
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: bash build_mac.sh
+      - run: ditto -c -k --keepParent dist/SnapSolve.app SnapSolve-mac.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SnapSolve-mac
+          path: SnapSolve-mac.zip

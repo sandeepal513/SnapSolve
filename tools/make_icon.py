@@ -34,6 +34,10 @@ else:
     print("No assets/icon.* image found - using the default icon")
 
 img.save(A / "icon.ico", format="ICO", sizes=SIZES)
+try:
+    img.save(A / "icon.icns")                             # macOS app icon
+except Exception:
+    pass
 if not (src and src.suffix.lower() == ".png"):
     img.save(A / "icon.png")                              # tray icon
 print("Created assets/icon.ico")

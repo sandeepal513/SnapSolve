@@ -22,5 +22,5 @@ assets/icon.ico
 # editors
 .vscode/
 .idea/
-
-API-KEY.txt
+assets/icon.icns
+API-KEY*.txt

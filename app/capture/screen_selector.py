@@ -2,6 +2,8 @@ from PySide6.QtCore import Qt, QRect, QTimer, Signal
 from PySide6.QtGui import QColor, QGuiApplication, QPainter, QPen
 from PySide6.QtWidgets import QWidget
 
+from app.utils.platform import IS_MAC, mac_activate
+
 
 class ScreenSelector(QWidget):
     selected = Signal(object)   # QPixmap of the chosen area
@@ -12,13 +14,14 @@ class ScreenSelector(QWidget):
         self.dim = max(20, min(150, int(dim)))        # overlay darkness (always at least slightly visible)
         self.border = max(1, min(4, int(border)))     # selection outline thickness
         self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setAttribute(Qt.WA_MacAlwaysShowToolWindow)   # keep visible while app is in background (macOS)
         self.setCursor(Qt.CrossCursor)
         self.start = self.end = None
 
     def begin(self):
         self.setGeometry(QGuiApplication.primaryScreen().virtualGeometry())  # all monitors
         self.start = self.end = None
-        self.show(); self.raise_(); self.activateWindow()
+        self.show(); self.raise_(); self.activateWindow(); mac_activate()
 
     def paintEvent(self, _):
         p = QPainter(self)
@@ -40,8 +43,8 @@ class ScreenSelector(QWidget):
         self.hide()
         if r.width() < 10 or r.height() < 10:
             self.cancelled.emit(); return
-        g = r.translated(self.geometry().topLeft())          # global logical coords
-        QTimer.singleShot(60, lambda: self._grab(g))        # let overlay disappear
+        g = QRect(self.mapToGlobal(r.topLeft()), r.size())   # global logical coords
+        QTimer.singleShot(160 if IS_MAC else 60, lambda: self._grab(g))        # let overlay disappear
 
     def keyPressEvent(self, e):
         if e.key() == Qt.Key_Escape:

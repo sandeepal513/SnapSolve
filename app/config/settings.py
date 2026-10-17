@@ -1,7 +1,12 @@
-import json, os, shutil
+import json, os, shutil, sys
 from pathlib import Path
 
-_BASE = Path(os.getenv("APPDATA", Path.home()))
+if sys.platform == "win32":
+    _BASE = Path(os.getenv("APPDATA", Path.home()))
+elif sys.platform == "darwin":
+    _BASE = Path.home() / "Library" / "Application Support"
+else:
+    _BASE = Path.home() / ".config"
 DIR = _BASE / "SnapSolve"
 _OLD = _BASE / "AIScreenAssistant"          # name used before the rename
 if not DIR.exists() and _OLD.exists():      # keep the saved API key and settings
@@ -35,6 +40,15 @@ class Settings:
         FILE.write_text(json.dumps(self.data, indent=2), "utf-8")
 
     def _load_key(self) -> str:
+        if sys.platform != "win32":            # macOS: stored in the Keychain
+            try:
+                import keyring
+                k = (keyring.get_password("SnapSolve", "groq") or "").strip()
+                if k.startswith("gsk_"):
+                    return k
+            except Exception:
+                pass
+            return os.getenv("AI_API_KEY", "").strip()
         from app.utils.secret import unprotect
         for f in KEYFILES:                     # encrypted, tied to your Windows user
             try:
@@ -54,6 +68,13 @@ class Settings:
     def set_api_key(self, key: str) -> bool:
         key = key.strip()
         self._key = key                        # works immediately for this session
+        if sys.platform != "win32":
+            try:
+                import keyring
+                keyring.set_password("SnapSolve", "groq", key)
+                return True
+            except Exception:
+                return False
         try:
             from app.utils.secret import protect
             KEYFILES[0].write_bytes(protect(key.encode("utf-8")))

@@ -1,4 +1,3 @@
-import ctypes
 from html import escape
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QGuiApplication
@@ -7,10 +6,7 @@ from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 COLOR = "#475452"
 
 
-def _mouse_down() -> bool:
-    """True while any mouse button (left/right/middle) is held, anywhere on screen."""
-    gs = ctypes.windll.user32.GetAsyncKeyState
-    return any(gs(vk) & 0x8000 for vk in (0x01, 0x02, 0x04))
+from app.utils.platform import mouse_down as _mouse_down
 
 
 class AnswerPopup(QWidget):
@@ -18,6 +14,7 @@ class AnswerPopup(QWidget):
         super().__init__(None, Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool
                          | Qt.WindowDoesNotAcceptFocus | Qt.WindowTransparentForInput)
         self.setAttribute(Qt.WA_ShowWithoutActivating)
+        self.setAttribute(Qt.WA_MacAlwaysShowToolWindow)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.label = QLabel(wordWrap=True, textFormat=Qt.RichText)
         self.label.setStyleSheet(f"background:transparent;border:none;color:{COLOR};"

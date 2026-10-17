@@ -1,4 +1,4 @@
-import re
+import re, sys
 from PIL import Image
 from app.ocr.image_processor import preprocess
 from app.utils.logger import get_logger
@@ -28,6 +28,16 @@ def fix_spaces(line: str) -> str:
     return re.sub(r"[A-Za-z]{10,}", seg, line)
 
 
+def _native_ocr():
+    if sys.platform == "win32":
+        from app.ocr import windows_ocr as m
+    elif sys.platform == "darwin":
+        from app.ocr import mac_ocr as m
+    else:
+        raise ImportError("no built-in OCR on this OS")
+    return m
+
+
 class OCRError(Exception):
     pass
 
@@ -40,18 +50,18 @@ class OCREngine:
     def read(self, img, enhance=False) -> str:
         if self._win_ok:                          # 1) Windows built-in OCR (most accurate)
             try:
-                from app.ocr import windows_ocr
+                native = _native_ocr()
                 big = img
                 if img.height < 400 and img.width <= 1600:   # small crops read better enlarged
                     big = img.resize((img.width * 2, img.height * 2), Image.LANCZOS)
-                text = windows_ocr.read(big)
+                text = native.read(big)
                 if text.strip():
                     return text
             except (ImportError, RuntimeError) as e:
-                log.info("Windows OCR unavailable (%s); using fallback", e)
+                log.info("Built-in OCR unavailable (%s); using fallback", e)
                 self._win_ok = False
             except Exception as e:
-                log.info("Windows OCR failed once (%s: %s)", type(e).__name__, e)
+                log.info("Built-in OCR failed once (%s: %s)", type(e).__name__, e)
         return self._read_rapid(img, enhance)     # 2) RapidOCR fallback
 
     def _read_rapid(self, img, enhance) -> str:

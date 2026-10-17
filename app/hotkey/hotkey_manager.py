@@ -1,4 +1,4 @@
-import ctypes, threading
+import ctypes, sys, threading
 from ctypes import wintypes
 from PySide6.QtCore import QObject, Signal
 
@@ -9,9 +9,22 @@ class HotkeyManager(QObject):
     failed = Signal()
 
     def __init__(self, combo):
-        super().__init__(); self.combo, self.tid = combo, None
+        super().__init__(); self.combo, self.tid, self._listener = combo, None, None
+
+    def _start_pynput(self):
+        try:                                   # macOS: needs Input Monitoring / Accessibility permission
+            from pynput import keyboard
+            names = {"ctrl": "<ctrl>", "alt": "<alt>", "shift": "<shift>", "win": "<cmd>", "cmd": "<cmd>"}
+            parts = self.combo.lower().replace(" ", "").split("+")
+            combo = "+".join([names[p] for p in parts[:-1]] + [parts[-1]])
+            self._listener = keyboard.GlobalHotKeys({combo: self.triggered.emit})
+            self._listener.start()
+        except Exception:
+            self.failed.emit()
 
     def start(self):
+        if sys.platform != "win32":
+            return self._start_pynput()
         threading.Thread(target=self._run, daemon=True).start()
 
     def _run(self):
@@ -30,5 +43,8 @@ class HotkeyManager(QObject):
         u.UnregisterHotKey(None, 1)
 
     def stop(self):
+        if self._listener:
+            self._listener.stop()
+            return
         if self.tid:
             ctypes.windll.user32.PostThreadMessageW(self.tid, 0x0012, 0, 0)  # WM_QUIT

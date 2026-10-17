@@ -14,6 +14,7 @@ from app.ui.answer_popup import AnswerPopup
 from app.ui.tray import Tray
 from app.utils.clipboard import copy_text
 from app.utils.logger import get_logger
+from app.utils.platform import mac_activate, mac_setup
 
 log = get_logger()
 
@@ -85,6 +86,7 @@ class Controller:
     def ask_key(self) -> bool:
         text = "Paste your Groq API key (starts with gsk_):"
         while True:
+            mac_activate()
             dlg = QInputDialog()
             dlg.setWindowTitle("SnapSolve - API Key"); dlg.setLabelText(text)
             dlg.setTextEchoMode(QLineEdit.Password); dlg.resize(440, 120)
@@ -105,7 +107,7 @@ class Controller:
 
 
 def main():
-    app = QApplication(sys.argv); app.setQuitOnLastWindowClosed(False)
+    app = QApplication(sys.argv); app.setQuitOnLastWindowClosed(False); mac_setup()
     lock = QLockFile(QDir.tempPath() + "/snapsolve.lock")
     if not lock.tryLock(100):
         return 0  # already running
