@@ -7,8 +7,10 @@ class ScreenSelector(QWidget):
     selected = Signal(object)   # QPixmap of the chosen area
     cancelled = Signal()
 
-    def __init__(self):
+    def __init__(self, dim=35, border=1):
         super().__init__(None, Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
+        self.dim = max(20, min(150, int(dim)))        # overlay darkness (always at least slightly visible)
+        self.border = max(1, min(4, int(border)))     # selection outline thickness
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setCursor(Qt.CrossCursor)
         self.start = self.end = None
@@ -20,11 +22,11 @@ class ScreenSelector(QWidget):
 
     def paintEvent(self, _):
         p = QPainter(self)
-        p.fillRect(self.rect(), QColor(0, 0, 0, 90))
+        p.fillRect(self.rect(), QColor(0, 0, 0, self.dim))
         if self.start and self.end:
             r = QRect(self.start, self.end).normalized()
-            p.fillRect(r, QColor(255, 255, 255, 40))
-            p.setPen(QPen(QColor(0, 120, 215), 2)); p.drawRect(r)
+            p.fillRect(r, QColor(255, 255, 255, 15))
+            p.setPen(QPen(QColor(120, 160, 200, 150), self.border)); p.drawRect(r)
 
     def mousePressEvent(self, e):
         self.start = self.end = e.position().toPoint(); self.update()

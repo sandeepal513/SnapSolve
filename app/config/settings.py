@@ -12,7 +12,7 @@ if not DIR.exists() and _OLD.exists():      # keep the saved API key and setting
 FILE = DIR / "config.json"
 KEYFILES = [DIR / "key_groq.dat", DIR / "key.dat"]   # key.dat = older versions
 DEFAULTS = {"hotkey": "ctrl+shift+a", "preferred_model": "",
-            "popup_seconds": 15, "temperature": 0.0, "preprocess": False}
+            "popup_seconds": 15, "overlay_dim": 35, "overlay_border": 1, "temperature": 0.0, "preprocess": False}
 
 
 class Settings:
